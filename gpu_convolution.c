@@ -15,7 +15,7 @@ __constant__ float c_kernel[9]; // 最大支持3x3卷积核
     }                                                             \
 }
 
-// CUDA卷积内核（使用反射边界处理）
+// 卷积内核（使用反射边界处理）
 __global__ void convolution_kernel(const float* input, float* output,
                                    int width, int height, int kernel_size) {
     int tx = blockIdx.x * blockDim.x + threadIdx.x;
@@ -32,8 +32,8 @@ __global__ void convolution_kernel(const float* input, float* output,
             int y = ty + i;
             
             // 反射边界处理
-            x = abs(x); if (x >= width) x = 2*width - x - 1;
-            y = abs(y); if (y >= height) y = 2*height - y - 1;
+            x = abs(x); if (x >= width) x = 2 * width - x - 1;
+            y = abs(y); if (y >= height) y = 2 * height - y - 1;
 
             int kernel_idx = (i + half_kernel) * kernel_size + (j + half_kernel);
             sum += input[y * width + x] * c_kernel[kernel_idx];
@@ -57,12 +57,12 @@ void gpu_convolution(float *h_input, float *h_output, float *h_kernel,
     CHECK_CUDA(cudaMemcpyToSymbol(c_kernel, h_kernel, 
                 kernel_size*kernel_size*sizeof(float)));
 
-    // 3. 配置执行参数
-    dim3 block(16, 16); // 256 threads per block
-    dim3 grid((width + block.x - 1)/block.x, 
-              (height + block.y - 1)/block.y);
+    // 3. 配置执行参数：动态计算线程块和网格大小
+    dim3 block(16, 16); // 每个线程块 16x16
+    dim3 grid((width + block.x - 1) / block.x, 
+              (height + block.y - 1) / block.y);
 
-    // 4. 启动内核
+    // 4. 启动卷积内核
     convolution_kernel<<<grid, block>>>(d_input, d_output, width, height, kernel_size);
     CHECK_CUDA(cudaGetLastError());
 
@@ -103,8 +103,15 @@ int main() {
     printf("启动CUDA卷积...\n");
     gpu_convolution(h_input, h_output, h_kernel, width, height, kernel_size);
 
-    // 验证结果
-    int center_idx = (height/2) * width + (width/2);
+    // 验证结果：检查多个点的值
+    printf("验证结果：\n");
+    for (int i = 0; i < 10; ++i) {
+        int idx = i * width + i;  // 打印沿对角线的10个值
+        printf("点 (%d, %d) 结果: %.2f\n", i, i, h_output[idx]);
+    }
+
+    // 验证中心点的结果
+    int center_idx = (height / 2) * width + (width / 2);
     printf("中心点结果: %.2f\n", h_output[center_idx]);
 
     // 释放资源
