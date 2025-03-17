@@ -107,11 +107,14 @@ int main() {
 
     gpu_convolution(h_input, h_output, h_kernel, width, height, kernel_size);
 
-    printf("中心点结果: %.2f\n", h_output[(height / 2) * width + (width / 2)]);
+    // 输出卷积结果的一部分检查
+    for (int i = 0; i < 10; ++i) {
+        printf("%f ", h_output[i]);
+    }
 
     CHECK_CUDA(cudaFreeHost(h_input));
     CHECK_CUDA(cudaFreeHost(h_output));
     free(h_kernel);
-    
+
     return 0;
 }
