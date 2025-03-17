@@ -27,7 +27,7 @@ __global__ void convolution_kernel(const float *input, float *output,
     int half_kernel = kernel_size / 2;
     float sum = 0.0f;
 
-    // **共享内存优化**（适用于中等尺寸卷积核）
+    // **共享内存优化**（适用于中等尺寸卷积核） 
     __shared__ float s_input[18][18];  
     int s_x = threadIdx.x + half_kernel;
     int s_y = threadIdx.y + half_kernel;
